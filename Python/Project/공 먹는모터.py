@@ -21,7 +21,7 @@ GPIO.setup(PWM2_PIN, GPIO.OUT)
 
 
 pwm1 = GPIO.PWM(PWM1_PIN, 1000)
-pwm2 = GPIO.PWM(PWM1_PIN, 1000)
+pwm2 = GPIO.PWM(PWM2_PIN, 1000)
 pwm1.start(0)
 pwm2.start(0)
 
@@ -64,7 +64,7 @@ try:
             GPIO.output(BRK1_PIN, GPIO.HIGH)
             pwm1.ChangeDutyCycle(0)
             
-            GPIO.output(BRK1_PIN, GPIO.HIGH)
+            GPIO.output(BRK2_PIN, GPIO.HIGH)
             pwm2.ChangeDutyCycle(0)
             
         elif cmd =='Q':
