@@ -1,5 +1,11 @@
 import RPi.GPIO as GPIO
 import time
+import serial
+
+use_serial = False
+
+if use_serial:
+    ser = serial.serial('/dev/serial0', baudrate=9600, timeout=1)
 
 DIR1_PIN = 23
 BRK1_PIN = 24
@@ -27,17 +33,27 @@ pwm2.start(0)
 
 try:
     while True:
-        cmd = input("Enter T (Tennis), B (Baseball), P (Ping-pong), S (Stop), Q (Quit): ").upper()
+        cmd = None
         
-        if cmd == 'T':
-            print("start - tennis mode (20%)")
-            GPIO.output(DIR1_PIN, GPIO.HIGH)
-            GPIO.output(BRK1_PIN, GPIO.LOW)
-            pwm1.ChangeDutyCycle(20)
+        if use_serial:
+            if ser.in_waiting > 0:
+                cmd = ser.read().decode().strip().upper()
+        else:
+            cmd = input("Enter T (Tennis), B (Baseball), P (Ping-pong), S (Stop), Q (Quit): ").upper()
             
-            GPIO.output(DIR2_PIN, GPIO.LOW)
-            GPIO.output(BRK2_PIN, GPIO.LOW)
-            pwm2.ChangeDutyCycle(20)
+        if cmd:
+            print(f"Received: {cmd}")
+            
+            if cmd == 'T':
+                print("start - tennis mode (20%)")
+                GPIO.output(DIR1_PIN, GPIO.HIGH)
+                GPIO.output(BRK1_PIN, GPIO.LOW)
+                pwm1.ChangeDutyCycle(20)
+            
+            
+                GPIO.output(DIR2_PIN, GPIO.LOW)
+                GPIO.output(BRK2_PIN, GPIO.LOW)
+                pwm2.ChangeDutyCycle(20)
             
         elif cmd == 'B':
             print("start - Baseball mode (25%)")
@@ -70,6 +86,9 @@ try:
         elif cmd =='Q':
             print("Quit")
             break
+        
+        else:
+            print("invalid command")
 
 except KeyboardInterrupt:
     pass
@@ -78,3 +97,5 @@ finally:
     pwm1.stop()
     pwm2.stop()
     GPIO.cleanup()
+    if use_serial:
+        ser.close()
