@@ -8,6 +8,7 @@ if use_serial:
     ser = serial.Serial('/dev/serial0', baudrate=9600, timeout=1)
 
 GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
 
 DIR1_PIN = 23
 BRK1_PIN = 24
