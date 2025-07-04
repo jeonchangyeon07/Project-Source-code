@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>모터 제어</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 50px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        button {
+            font-size: 20px;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 8px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 18px;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>모터 제어 패널</h1>
+    <form id="motor-form">
+        <button type="submit" name="cmd" value="T">Tennis (20%)</button>
+        <button type="submit" name="cmd" value="B">Baseball (25%)</button>
+        <button type="submit" name="cmd" value="P">Ping-pong (10%)</button>
+        <button type="submit" name="cmd" value="S">Stop</button>
+    </form>
+    <p id="status"></p>
+
+    <script>
+        document.getElementById("motor-form").addEventListener("click", function(event) {
+            if (event.target.tagName === "BUTTON") {
+                event.preventDefault(); // 폼 제출 방지
+                const cmd = event.target.value;
+
+                fetch("/control", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: `cmd=${cmd}`
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("서버 오류");
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    document.getElementById("status").textContent = `명령 전송됨: ${cmd}`;
+                })
+                .catch(error => {
+                    document.getElementById("status").textContent = "명령 실패 또는 통신 오류!";
+                });
+            }
+        });
+    </script>
+</body>
+</html>
