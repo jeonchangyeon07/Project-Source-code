@@ -1,104 +1,80 @@
-import RPi.GPIO as GPIO
+from gpiozero import PWMOutputDevice, OutputDevice
 import time
 import serial
 
 use_serial = False  # True로 바꾸면 블루투스(HC-06) 사용
 
 if use_serial:
-    ser = serial.Serial('/dev/serial0', baudrate=9600, timeout=1)  # 대소문자 오타 수정!
+    ser = serial.Serial('/dev/serial0', baudrate=9600, timeout=1)
 
 # 모터1 핀 설정
-DIR1_PIN = 23
-BRK1_PIN = 24
-PWM1_PIN = 12
+dir1 = OutputDevice(23)
+brk1 = OutputDevice(24)
+pwm1 = PWMOutputDevice(12, frequency=1000)
 
 # 모터2 핀 설정
-DIR2_PIN = 17
-BRK2_PIN = 27
-PWM2_PIN = 13
+dir2 = OutputDevice(17)
+brk2 = OutputDevice(27)
+pwm2 = PWMOutputDevice(13, frequency=1000)
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
+pwm1.value = 0
+pwm2.value = 0
 
-GPIO.setup(DIR1_PIN, GPIO.OUT)
-GPIO.setup(BRK1_PIN, GPIO.OUT)
-GPIO.setup(PWM1_PIN, GPIO.OUT)
-
-GPIO.setup(DIR2_PIN, GPIO.OUT)
-GPIO.setup(BRK2_PIN, GPIO.OUT)
-GPIO.setup(PWM2_PIN, GPIO.OUT)
-
-pwm1 = GPIO.PWM(PWM1_PIN, 1000)  # 1kHz
-pwm2 = GPIO.PWM(PWM2_PIN, 1000)
-pwm1.start(0)
-pwm2.start(0)
+def set_motor(mode):
+    if mode == 'T':
+        print("start - Tennis mode (20%)")
+        dir1.on()
+        brk1.off()
+        pwm1.value = 0.2
+        dir2.off()
+        brk2.off()
+        pwm2.value = 0.2
+    elif mode == 'B':
+        print("start - Baseball mode (25%)")
+        dir1.on()
+        brk1.off()
+        pwm1.value = 0.25
+        dir2.off()
+        brk2.off()
+        pwm2.value = 0.25
+    elif mode == 'P':
+        print("start - Ping-pong mode (10%)")
+        dir1.on()
+        brk1.off()
+        pwm1.value = 0.1
+        dir2.off()
+        brk2.off()
+        pwm2.value = 0.1
+    elif mode == 'S':
+        print("stop")
+        brk1.on()
+        pwm1.value = 0
+        brk2.on()
+        pwm2.value = 0
 
 try:
     while True:
         cmd = None
-
-        # 입력 방식에 따라 명령 받기
         if use_serial:
             if ser.in_waiting > 0:
                 cmd = ser.read().decode().strip().upper()
         else:
             cmd = input("Enter T (Tennis), B (Baseball), P (Ping-pong), S (Stop), Q (Quit): ").strip().upper()
-
-        # 명령이 들어왔을 때만 처리
         if cmd:
             print(f"Received: {cmd}")
-
-            if cmd == 'T':
-                print("start - Tennis mode (20%)")
-                GPIO.output(DIR1_PIN, GPIO.HIGH)
-                GPIO.output(BRK1_PIN, GPIO.LOW)
-                pwm1.ChangeDutyCycle(20)
-
-                GPIO.output(DIR2_PIN, GPIO.LOW)
-                GPIO.output(BRK2_PIN, GPIO.LOW)
-                pwm2.ChangeDutyCycle(20)
-
-            elif cmd == 'B':
-                print("start - Baseball mode (25%)")
-                GPIO.output(DIR1_PIN, GPIO.HIGH)
-                GPIO.output(BRK1_PIN, GPIO.LOW)
-                pwm1.ChangeDutyCycle(25)
-
-                GPIO.output(DIR2_PIN, GPIO.LOW)
-                GPIO.output(BRK2_PIN, GPIO.LOW)
-                pwm2.ChangeDutyCycle(25)
-
-            elif cmd == 'P':
-                print("start - Ping-pong mode (10%)")
-                GPIO.output(DIR1_PIN, GPIO.HIGH)
-                GPIO.output(BRK1_PIN, GPIO.LOW)
-                pwm1.ChangeDutyCycle(10)
-
-                GPIO.output(DIR2_PIN, GPIO.LOW)
-                GPIO.output(BRK2_PIN, GPIO.LOW)
-                pwm2.ChangeDutyCycle(10)
-
-            elif cmd == 'S':
-                print("stop")
-                GPIO.output(BRK1_PIN, GPIO.HIGH)
-                pwm1.ChangeDutyCycle(0)
-
-                GPIO.output(BRK2_PIN, GPIO.HIGH)
-                pwm2.ChangeDutyCycle(0)
-
+            if cmd in ['T', 'B', 'P', 'S']:
+                set_motor(cmd)
             elif cmd == 'Q':
                 print("Quit")
                 break
-
             else:
                 print("Invalid command")
-
 except KeyboardInterrupt:
     pass
-
 finally:
-    pwm1.stop()
-    pwm2.stop()
-    GPIO.cleanup()
+    pwm1.value = 0
+    pwm2.value = 0
+    brk1.on()
+    brk2.on()
     if use_serial:
         ser.close()

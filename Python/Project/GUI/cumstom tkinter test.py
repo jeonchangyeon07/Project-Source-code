@@ -46,7 +46,7 @@ radiobutton1.pack()
 radiobutton2.pack()
 
 # ComboBox 위젯
-combobox = ctk.CTkComboBox(root, values=["선택 1", "선택 2", "선택 3"])
+combobox = ctk.CTkComboBox(root, values=["tennis", "baseball", "pingpong"])
 combobox.pack(pady=10)
 
 # ProgressBar 위젯

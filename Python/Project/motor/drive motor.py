@@ -1,4 +1,4 @@
-import RPi.GPIO as GPIO
+from gpiozero import PWMOutputDevice, DigitalOutputDevice
 import time
 
 DIR3_PIN = 5
@@ -9,20 +9,14 @@ DIR4_PIN = 16
 BRK4_PIN = 20
 PWM4_PIN = 18
 
-GPIO.setmode(GPIO.BCM)
+# gpiozero 객체 생성
+dir3 = DigitalOutputDevice(DIR3_PIN)
+brk3 = DigitalOutputDevice(BRK3_PIN)
+pwm3 = PWMOutputDevice(PWM3_PIN, frequency=1000)
 
-GPIO.setup(DIR3_PIN, GPIO.OUT)
-GPIO.setup(BRK3_PIN, GPIO.OUT)
-GPIO.setup(PWM3_PIN, GPIO.OUT)
-
-GPIO.setup(DIR4_PIN, GPIO.OUT)
-GPIO.setup(BRK4_PIN, GPIO.OUT)
-GPIO.setup(PWM4_PIN, GPIO.OUT)
-
-pwm3 = GPIO.PWM(PWM3_PIN, 1000)
-pwm4 = GPIO.PWM(PWM4_PIN, 1000)
-pwm3.start(0)
-pwm4.start(0)
+dir4 = DigitalOutputDevice(DIR4_PIN)
+brk4 = DigitalOutputDevice(BRK4_PIN)
+pwm4 = PWMOutputDevice(PWM4_PIN, frequency=1000)
 
 try:
     while True:
@@ -30,51 +24,51 @@ try:
         
         if cmd == 'F':
             print("start - Front")
-            GPIO.output(DIR3_PIN, GPIO.HIGH)
-            GPIO.output(BRK3_PIN, GPIO.LOW)
-            pwm3.ChangeDutyCycle(10)
+            dir3.on()
+            brk3.off()
+            pwm3.value = 0.1
             
-            GPIO.output(DIR4_PIN, GPIO.HIGH)
-            GPIO.output(BRK4_PIN, GPIO.LOW)
-            pwm4.ChangeDutyCycle(10)
+            dir4.on()
+            brk4.off()
+            pwm4.value = 0.1
             
         elif cmd == 'B':
             print("start - Back")
-            GPIO.output(DIR3_PIN, GPIO.LOW)
-            GPIO.output(BRK3_PIN, GPIO.LOW)
-            pwm3.ChangeDutyCycle(10)
+            dir3.off()
+            brk3.off()
+            pwm3.value = 0.1
             
-            GPIO.output(DIR4_PIN, GPIO.LOW)
-            GPIO.output(BRK4_PIN, GPIO.LOW)
-            pwm4.ChangeDutyCycle(10)
+            dir4.off()
+            brk4.off()
+            pwm4.value = 0.1
             
         elif cmd == 'L':
             print("start - Left")
-            GPIO.output(DIR3_PIN, GPIO.HIGH)
-            GPIO.output(BRK3_PIN, GPIO.LOW)
-            pwm3.ChangeDutyCycle(10)
+            dir3.on()
+            brk3.off()
+            pwm3.value = 0.1
             
-            GPIO.output(DIR4_PIN, GPIO.HIGH)
-            GPIO.output(BRK4_PIN, GPIO.LOW)
-            pwm4.ChangeDutyCycle(15)
+            dir4.on()
+            brk4.off()
+            pwm4.value = 0.15
             
         elif cmd == 'R':
             print("start - Right")
-            GPIO.output(DIR3_PIN, GPIO.HIGH)
-            GPIO.output(BRK3_PIN, GPIO.LOW)
-            pwm3.ChangeDutyCycle(15)
+            dir3.on()
+            brk3.off()
+            pwm3.value = 0.15
             
-            GPIO.output(DIR4_PIN, GPIO.HIGH)
-            GPIO.output(BRK4_PIN, GPIO.LOW)
-            pwm4.ChangeDutyCycle(10)
+            dir4.on()
+            brk4.off()
+            pwm4.value = 0.1
             
         elif cmd =='S':
             print("stop")
-            GPIO.output(BRK3_PIN, GPIO.HIGH)
-            pwm3.ChangeDutyCycle(0)
+            brk3.on()
+            pwm3.value = 0
             
-            GPIO.output(BRK4_PIN, GPIO.HIGH)
-            pwm4.ChangeDutyCycle(0)
+            brk4.on()
+            pwm4.value = 0
             
         elif cmd =='Q':
             print("Quit")
@@ -84,6 +78,8 @@ except KeyboardInterrupt:
     pass
 
 finally:
-    pwm3.stop()
-    pwm4.stop()
-    GPIO.cleanup()
+    pwm3.value = 0
+    pwm4.value = 0
+    brk3.on()
+    brk4.on()
+    # gpiozero는 cleanup이 필요 없음

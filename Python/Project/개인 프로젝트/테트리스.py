@@ -243,7 +243,7 @@ def main():
             grid=create_grid(locked)
             fall+=clock.get_rawtime()
             clock.tick()
-            speed=max(0.2,0.5-(time.time()-start_time)/45)
+            speed=max(0.-(time.time()-start_time)/45)
 
             if fall/1000>speed:
                 fall=0
