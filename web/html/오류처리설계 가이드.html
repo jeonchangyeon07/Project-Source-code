@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python YOLO/OpenCV 오류 처리 설계 가이드</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 12px 20px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 1em;
+        }
+        
+        .nav-tab.active {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .tab-content {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+        
+        .code-block pre {
+            margin: 0;
+        }
+        
+        .error-type {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .error-type h4 {
+            color: #e53e3e;
+            margin-bottom: 10px;
+        }
+        
+        .solution {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .solution h4 {
+            color: #38a169;
+            margin-bottom: 10px;
+        }
+        
+        .checklist {
+            background: #fffaf0;
+            border: 1px solid #fbb6ce;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .checklist h4 {
+            color: #d69e2e;
+            margin-bottom: 15px;
+        }
+        
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .checklist-item:hover {
+            background: #fef5e7;
+        }
+        
+        .checklist-item input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        .tips {
+            background: linear-gradient(135deg, #e0f2fe 0%, #e1f5fe 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .tips h4 {
+            color: #0277bd;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .interactive-demo {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .demo-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #4a5568;
+            border-radius: 5px;
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+        
+        .demo-output {
+            background: #2d3748;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            min-height: 100px;
+            border: 1px solid #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐍 Python YOLO/OpenCV 오류 처리 설계</h1>
+            <p>VSCode + Conda 환경에서의 완벽한 오류 처리 가이드</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('basics')">기본 원칙</button>
+            <button class="nav-tab" onclick="showTab('common-errors')">일반적인 오류</button>
+            <button class="nav-tab" onclick="showTab('yolo-errors')">YOLO 오류</button>
+            <button class="nav-tab" onclick="showTab('opencv-errors')">OpenCV 오류</button>
+            <button class="nav-tab" onclick="showTab('best-practices')">모범 사례</button>
+            <button class="nav-tab" onclick="showTab('checklist')">체크리스트</button>
+        </div>
+        
+        <div id="basics" class="tab-content active">
+            <div class="section">
+                <h3>🎯 오류 처리 기본 원칙</h3>
+                <p>Python에서 효과적인 오류 처리를 위한 핵심 원칙들을 살펴보겠습니다.</p>
+                
+                <div class="code-block">
+                    <pre># 1. 구체적인 예외 처리
+try:
+    # 위험한 코드
+    result = risky_operation()
+except FileNotFoundError as e:
+    logger.error(f"파일을 찾을 수 없습니다: {e}")
+    return None
+except ValueError as e:
+    logger.error(f"값 오류: {e}")
+    return None
+except Exception as e:
+    logger.error(f"예상치 못한 오류: {e}")
+    return None
+
+# 2. 로깅 시스템 구축
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)</pre>
+                </div>
+                
+                <div class="tips">
+                    <h4>💡 핵심 팁</h4>
+                    <ul>
+                        <li>항상 구체적인 예외 타입을 잡으세요</li>
+                        <li>로깅을 통해 디버깅 정보를 남기세요</li>
+                        <li>사용자에게 친화적인 오류 메시지를 제공하세요</li>
+                        <li>예외 발생 시 적절한 대안을 제시하세요</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>🔧 오류 처리 데코레이터</h3>
+                <p>반복적인 오류 처리를 위한 데코레이터를 만들어보겠습니다.</p>
+                
+                <div class="code-block">
+                    <pre>import functools
+import logging
+
+def error_handler(default_return=None, log_errors=True):
+    """오류 처리 데코레이터"""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                if log_errors:
+                    logging.error(f"{func.__name__}에서 오류 발생: {e}")
+                return default_return
+        return wrapper
+    return decorator
+
+# 사용 예시
+@error_handler(default_return=False, log_errors=True)
+def load_model(model_path):
+    """모델 로딩 함수"""
+    model = YOLO(model_path)
+    return model</pre>
+                </div>
+            </div>
+        </div>
+        
+        <div id="common-errors" class="tab-content">
+            <div class="section">
+                <h3>⚠️ 일반적인 Python 오류</h3>
+                
+                <div class="error-type">
+                    <h4>FileNotFoundError</h4>
+                    <p>파일이나 디렉토리를 찾을 수 없을 때 발생</p>
+                    <div class="code-block">
+                        <pre>import os
+from pathlib import Path
+
+def safe_file_load(file_path):
+    """안전한 파일 로딩"""
+    try:
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"파일을 찾을 수 없습니다: {file_path}")
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError as e:
+        logger.error(f"파일 로딩 실패: {e}")
+        return None
+    except PermissionError:
+        logger.error(f"파일 접근 권한이 없습니다: {file_path}")
+        return None</pre>
+                    </div>
+                </div>
+                
+                <div class="error-type">
+                    <h4>ImportError / ModuleNotFoundError</h4>
+                    <p>모듈을 가져올 수 없을 때 발생</p>
+                    <div class="code-block">
+                        <pre>def check_dependencies():
+    """필수 라이브러리 확인"""
+    required_packages = {
+        'cv2': 'opencv-python',
+        'ultralytics': 'ultralytics',
+        'numpy': 'numpy',
+        'torch': 'torch'
+    }
+    
+    missing_packages = []
+    
+    for package, install_name in required_packages.items():
+        try:
+            __import__(package)
+            print(f"✅ {package} 설치됨")
+        except ImportError:
+            missing_packages.append(install_name)
+            print(f"❌ {package} 설치 필요")
+    
+    if missing_packages:
+        print(f"다음 패키지를 설치하세요: {', '.join(missing_packages)}")
+        return False
+    return True</pre>
+                    </div>
+                </div>
+                
+                <div class="error-type">
+                    <h4>MemoryError</h4>
+                    <p>메모리 부족으로 인한 오류</p>
+                    <div class="code-block">
+                        <pre>import gc
+import psutil
+
+def monitor_memory():
+    """메모리 사용량 모니터링"""
+    memory = psutil.virtual_memory()
+    print(f"메모리 사용률: {memory.percent}%")
+    
+    if memory.percent > 80:
+        print("⚠️ 메모리 사용량이 높습니다!")
+        gc.collect()  # 가비지 컬렉션 실행
+        return False
+    return True
+
+def process_with_memory_check(data):
+    """메모리 체크와 함께 처리"""
+    if not monitor_memory():
+        print("메모리 부족으로 처리를 중단합니다.")
+        return None
+    
+    try:
+        result = heavy_processing(data)
+        return result
+    except MemoryError:
+        print("메모리 부족 오류 발생")
+        gc.collect()
+        return None</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="yolo-errors" class="tab-content">
+            <div class="section">
+                <h3>🎯 YOLO 관련 오류 처리</h3>
+                
+                <div class="error-type">
+                    <h4>모델 로딩 오류</h4>
+                    <div class="code-block">
+                        <pre>from ultralytics import YOLO
+import os
+
+class YOLOModelManager:
+    def __init__(self):
+        self.model = None
+        self.model_path = None
+    
+    def load_model(self, model_path):
+        """안전한 YOLO 모델 로딩"""
+        try:
+            # 파일 존재 확인
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"모델 파일을 찾을 수 없습니다: {model_path}")
+            
+            # 파일 확장자 확인
+            if not model_path.endswith(('.pt', '.onnx', '.engine')):
+                raise ValueError(f"지원하지 않는 모델 형식입니다: {model_path}")
+            
+            # 모델 로딩
+            self.model = YOLO(model_path)
+            self.model_path = model_path
+            logger.info(f"✅ 모델 로딩 성공: {model_path}")
+            return True
+            
+        except FileNotFoundError as e:
+            logger.error(f"파일 오류: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"모델 로딩 실패: {e}")
+            return False
+    
+    def predict_safe(self, image_path, conf=0.5):
+        """안전한 예측 수행"""
+        if self.model is None:
+            logger.error("모델이 로딩되지 않았습니다.")
+            return None
+        
+        try:
+            results = self.model(image_path, conf=conf)
+            return results
+        except Exception as e:
+            logger.error(f"예측 실패: {e}")
+            return None</pre>
+                    </div>
+                </div>
+                
+                <div class="error-type">
+                    <h4>GPU 메모리 오류</h4>
+                    <div class="code-block">
+                        <pre>import torch
+
+def check_gpu_memory():
+    """GPU 메모리 확인"""
+    if torch.cuda.is_available():
+        gpu_memory = torch.cuda.get_device_properties(0).total_memory
+        gpu_memory_used = torch.cuda.memory_allocated(0)
+        gpu_memory_free = gpu_memory - gpu_memory_used
+        
+        print(f"GPU 메모리 - 전체: {gpu_memory/1024**3:.2f}GB")
+        print(f"GPU 메모리 - 사용: {gpu_memory_used/1024**3:.2f}GB")
+        print(f"GPU 메모리 - 여유: {gpu_memory_free/1024**3:.2f}GB")
+        
+        if gpu_memory_free < 1024**3:  # 1GB 미만
+            print("⚠️ GPU 메모리 부족!")
+            return False
+    return True
+
+def process_with_gpu_check(model, image_batch):
+    """GPU 메모리 체크와 함께 처리"""
+    if not check_gpu_memory():
+        # CPU로 전환
+        model.to('cpu')
+        print("CPU 모드로 전환됩니다.")
+    
+    try:
+        results = model(image_batch)
+        return results
+    except torch.cuda.OutOfMemoryError:
+        print("GPU 메모리 부족으로 CPU로 전환합니다.")
+        torch.cuda.empty_cache()
+        model.to('cpu')
+        return model(image_batch)</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="opencv-errors" class="tab-content">
+            <div class="section">
+                <h3>📷 OpenCV 관련 오류 처리</h3>
+                
+                <div class="error-type">
+                    <h4>이미지 로딩 오류</h4>
+                    <div class="code-block">
+                        <pre>import cv2
+import numpy as np
+
+def safe_image_load(image_path):
+    """안전한 이미지 로딩"""
+    try:
+        # 파일 존재 확인
+        if not os.path.exists(image_path):
+            raise FileNotFoundError(f"이미지 파일을 찾을 수 없습니다: {image_path}")
+        
+        # 이미지 로딩
+        image = cv2.imread(image_path)
+        
+        # 로딩 실패 확인
+        if image is None:
+            raise ValueError(f"이미지 로딩 실패: {image_path}")
+        
+        # 이미지 크기 확인
+        if image.shape[0] == 0 or image.shape[1] == 0:
+            raise ValueError(f"잘못된 이미지 크기: {image.shape}")
+        
+        logger.info(f"✅ 이미지 로딩 성공: {image_path}, 크기: {image.shape}")
+        return image
+        
+    except FileNotFoundError as e:
+        logger.error(f"파일 오류: {e}")
+        return None
+    except ValueError as e:
+        logger.error(f"이미지 오류: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"알 수 없는 오류: {e}")
+        return None</pre>
+                    </div>
+                </div>
+                
+                <div class="error-type">
+                    <h4>웹캠 연결 오류</h4>
+                    <div class="code-block">
+                        <pre>class SafeVideoCapture:
+    def __init__(self, source=0):
+        self.source = source
+        self.cap = None
+        self.is_opened = False
+    
+    def open(self):
+        """안전한 비디오 캡처 열기"""
+        try:
+            self.cap = cv2.VideoCapture(self.source)
+            
+            if not self.cap.isOpened():
+                raise RuntimeError(f"비디오 소스를 열 수 없습니다: {self.source}")
+            
+            # 테스트 프레임 읽기
+            ret, frame = self.cap.read()
+            if not ret:
+                raise RuntimeError("비디오 프레임을 읽을 수 없습니다.")
+            
+            self.is_opened = True
+            logger.info(f"✅ 비디오 캡처 열기 성공: {self.source}")
+            return True
+            
+        except RuntimeError as e:
+            logger.error(f"비디오 캡처 오류: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"알 수 없는 비디오 오류: {e}")
+            return False
+    
+    def read_frame(self):
+        """안전한 프레임 읽기"""
+        if not self.is_opened or self.cap is None:
+            return None
+        
+        try:
+            ret, frame = self.cap.read()
+            if not ret:
+                logger.warning("프레임 읽기 실패")
+                return None
+            return frame
+        except Exception as e:
+            logger.error(f"프레임 읽기 오류: {e}")
+            return None
+    
+    def release(self):
+        """안전한 리소스 해제"""
+        if self.cap is not None:
+            self.cap.release()
+            self.is_opened = False
+            logger.info("비디오 캡처 해제됨")</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="best-practices" class="tab-content">
+            <div class="section">
+                <h3>🏆 모범 사례</h3>
+                
+                <div class="solution">
+                    <h4>완전한 오류 처리 템플릿</h4>
+                    <div class="code-block">
+                        <pre>import logging
+import cv2
+from ultralytics import YOLO
+import torch
+import os
+from pathlib import Path
+
+# 로깅 설정
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('computer_vision.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+class ComputerVisionPipeline:
+    def __init__(self):
+        self.model = None
+        self.device = self._get_device()
+        
+    def _get_device(self):
+        """최적의 디바이스 선택"""
+        if torch.cuda.is_available():
+            logger.info("CUDA 사용 가능 - GPU 모드")
+            return 'cuda'
+        else:
+            logger.info("CUDA 사용 불가 - CPU 모드")
+            return 'cpu'
+    
+    def setup_model(self, model_path):
+        """모델 설정"""
+        try:
+            # 파일 존재 확인
+            if not Path(model_path).exists():
+                raise FileNotFoundError(f"모델 파일 없음: {model_path}")
+            
+            # 모델 로딩
+            self.model = YOLO(model_path)
+            self.model.to(self.device)
+            
+            logger.info(f"✅ 모델 설정 완료: {model_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ 모델 설정 실패: {e}")
+            return False
+    
+    def process_image(self, image_path, output_path=None):
+        """이미지 처리"""
+        try:
+            # 전처리
+            image = self._preprocess_image(image_path)
+            if image is None:
+                return None
+            
+            # 예측
+            results = self._predict(image)
+            if results is None:
+                return None
+            
+            # 후처리
+            output_image = self._postprocess(image, results)
+            
+            # 저장
+            if output_path:
+                self._save_result(output_image, output_path)
+            
+            return output_image
+            
+        except Exception as e:
+            logger.error(f"이미지 처리 실패: {e}")
+            return None
+    
+    def _preprocess_image(self, image_path):
+        """이미지 전처리"""
+        try:
+            image = cv2.imread(image_path)
+            if image is None:
+                raise ValueError(f"이미지 로딩 실패: {image_path}")
+            
+            # 이미지 크기 확인
+            height, width = image.shape[:2]
+            if height == 0 or width == 0:
+                raise ValueError(f"잘못된 이미지 크기: {image.shape}")
+            
+            return image
+            
+        except Exception as e:
+            logger.error(f"이미지 전처리 실패: {e}")
+            return None
+    
+    def _predict(self, image):
+        """예측 수행"""
+        try:
+            if self.model is None:
+                raise RuntimeError("모델이 로딩되지 않았습니다.")
+            
+            results = self.model(image)
+            return results
+            
+        except torch.cuda.OutOfMemoryError:
+            logger.warning("GPU 메모리 부족, CPU로 전환")
+            self.model.to('cpu')
+            return self.model(image)
+        except Exception as e:
+            logger.error(f"예측 실패: {e}")
+            return None
+    
+    def _postprocess(self, image, results):
+        """결과 후처리"""
+        try:
+            # 결과 그리기
+            annotated_image = results[0].plot()
+            return annotated_image
+            
+        except Exception as e:
+            logger.error(f"후처리 실패: {e}")
+            return image
+    
+    def _save_result(self, image, output_path):
+        """결과 저장"""
+        try:
+            # 출력 디렉토리 생성
+            output_dir = Path(output_path).parent
+            output_dir.mkdir(parents=True, exist_ok=True)
+            
+            # 이미지 저장
+            cv2.imwrite(str(output_path), image)
+            logger.info(f"결과 저장: {output_path}")
+            
+        except Exception as e:
+            logger.error(f"저장 실패: {e}")
+
+# 사용 예시
+if __name__ == "__main__":
+    pipeline = ComputerVisionPipeline()
+    
+    if pipeline.setup_model("yolov8n.pt"):
+        result = pipeline.process_image("input.jpg", "output.jpg")
+        if result is not None:
+            print("✅ 처리 완료")
+        else:
+            print("❌ 처리 실패")</pre>
+                    </div>
+                </div>
+                
+                <div class="tips">
+                    <h4>💡 VSCode 디버깅 팁</h4>
+                    <ul>
+                        <li><strong>launch.json 설정:</strong> Python 디버깅을 위한 구성</li>
+                        <li><strong>조건부 브레이크포인트:</strong> 특정 조건에서만 중단</li>
+                        <li><strong>예외 브레이크포인트:</strong> 예외 발생 시 자동 중단</li>
+                        <li><strong>변수 워치:</strong> 실시간 변수 값 모니터링</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="checklist" class="tab-content">
+            <div class="checklist">
+                <h4>✅ 오류 처리 체크리스트</h4>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check1">
+                    <label for="check1">로깅 시스템 구축 완료</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check2">
+                    <label for="check2">필수 라이브러리 설치 확인</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check3">
+                    <label for="check3">파일 존재 여부 확인</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check4">
+                    <label for="check4">GPU/CPU 메모리 모니터링</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check5">
+                    <label for="check5">이미지 로딩 검증</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check6">
+                    <label for="check6">모델 로딩 검증</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check7">
+                    <label for="check7">웹캠 연결 상태 확인</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check8">
+                    <label for="check8">예외 처리 구현</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check9">
+                    <label for="check9">사용자 친화적 오류 메시지</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check10">
+                    <label for="check10">리소스 정리 (cleanup) 구현</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check11">
+                    <label for="check11">단위 테스트 작성</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="check12">
+                    <label for="check12">성능 모니터링 구현</label>
+                </div>
+            </div>
+            
+            <div class="interactive-demo">
+                <h4>🧪 오류 처리 테스트 도구</h4>
+                <p>아래에서 다양한 오류 상황을 시뮬레이션해보세요:</p>
+                
+                <select id="errorType" class="demo-input">
+                    <option value="file_not_found">파일 없음 오류</option>
+                    <option value="invalid_image">잘못된 이미지</option>
+                    <option value="model_load_error">모델 로딩 실패</option>
+                    <option value="memory_error">메모리 부족</option>
+                    <option value="gpu_error">GPU 오류</option>
+                </select>
+                
+                <button class="btn" onclick="simulateError()">오류 시뮬레이션</button>
+                <button class="btn" onclick="clearOutput()">출력 지우기</button>
+                
+                <div id="errorOutput" class="demo-output">
+                    시뮬레이션 결과가 여기에 표시됩니다...
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>🚀 빠른 설정 가이드</h3>
+                <div class="code-block">
+                    <pre># 1. 가상환경 생성 및 활성화
+conda create -n cv_project python=3.9
+conda activate cv_project
+
+# 2. 필수 패키지 설치
+pip install ultralytics opencv-python torch torchvision numpy
+
+# 3. VSCode 설정
+# .vscode/settings.json
+{
+    "python.defaultInterpreterPath": "./venv/bin/python",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true
+}
+
+# 4. 기본 프로젝트 구조
+project/
+├── main.py
+├── models/
+├── data/
+├── logs/
+├── utils/
+│   ├── __init__.py
+│   ├── error_handler.py
+│   └── logger.py
+└── tests/</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showTab(tabName) {
+            // 모든 탭 숨기기
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 모든 탭 버튼 비활성화
+            const buttons = document.querySelectorAll('.nav-tab');
+            buttons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // 선택한 탭 보이기
+            document.getElementById(tabName).classList.add('active');
+            
+            // 선택한 탭 버튼 활성화
+            event.target.classList.add('active');
+        }
+        
+        function simulateError() {
+            const errorType = document.getElementById('errorType').value;
+            const output = document.getElementById('errorOutput');
+            
+            const errorScenarios = {
+                file_not_found: {
+                    error: "FileNotFoundError: 파일을 찾을 수 없습니다: 'model.pt'",
+                    solution: "해결방법:\n1. 파일 경로 확인\n2. 파일 존재 여부 검증\n3. 대체 모델 사용",
+                    code: "if not os.path.exists(model_path):\n    logger.error(f'모델 파일 없음: {model_path}')\n    return None"
+                },
+                invalid_image: {
+                    error: "ValueError: 이미지 로딩 실패",
+                    solution: "해결방법:\n1. 이미지 형식 확인\n2. 파일 손상 여부 체크\n3. 다른 이미지로 테스트",
+                    code: "image = cv2.imread(image_path)\nif image is None:\n    raise ValueError('이미지 로딩 실패')"
+                },
+                model_load_error: {
+                    error: "RuntimeError: YOLO 모델 로딩 실패",
+                    solution: "해결방법:\n1. 모델 파일 무결성 확인\n2. 라이브러리 버전 체크\n3. GPU 메모리 확인",
+                    code: "try:\n    model = YOLO(model_path)\nexcept Exception as e:\n    logger.error(f'모델 로딩 실패: {e}')"
+                },
+                memory_error: {
+                    error: "MemoryError: 메모리 부족",
+                    solution: "해결방법:\n1. 배치 크기 줄이기\n2. 이미지 해상도 낮추기\n3. 가비지 컬렉션 실행",
+                    code: "import gc\nif psutil.virtual_memory().percent > 80:\n    gc.collect()\n    return None"
+                },
+                gpu_error: {
+                    error: "RuntimeError: CUDA out of memory",
+                    solution: "해결방법:\n1. GPU 메모리 정리\n2. CPU 모드로 전환\n3. 모델 크기 줄이기",
+                    code: "try:\n    result = model(image)\nexcept torch.cuda.OutOfMemoryError:\n    model.to('cpu')\n    result = model(image)"
+                }
+            };
+            
+            const scenario = errorScenarios[errorType];
+            
+            output.innerHTML = `
+                <div style="color: #ff6b6b; margin-bottom: 15px;">
+                    <strong>❌ 오류:</strong><br>
+                    ${scenario.error}
+                </div>
+                <div style="color: #51cf66; margin-bottom: 15px;">
+                    <strong>✅ ${scenario.solution}</strong>
+                </div>
+                <div style="color: #74c0fc;">
+                    <strong>📝 코드 예시:</strong><br>
+                    <pre style="background: #2d3748; padding: 10px; border-radius: 5px; margin-top: 10px;">${scenario.code}</pre>
+                </div>
+            `;
+        }
+        
+        function clearOutput() {
+            document.getElementById('errorOutput').innerHTML = '시뮬레이션 결과가 여기에 표시됩니다...';
+        }
+        
+        // 체크리스트 상태 저장
+        document.querySelectorAll('.checklist-item input').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const checkedCount = document.querySelectorAll('.checklist-item input:checked').length;
+                const totalCount = document.querySelectorAll('.checklist-item input').length;
+                
+                if (checkedCount === totalCount) {
+                    alert('🎉 모든 체크리스트를 완료했습니다!');
+                }
+            });
+        });
+        
+        // 페이지 로드 시 기본 탭 활성화
+        document.addEventListener('DOMContentLoaded', function() {
+            showTab('basics');
+        });
+    </script>
+</body>
+</html>
